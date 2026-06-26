@@ -1,0 +1,365 @@
+-- SERVICES
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local UserInputService = game:GetService("UserInputService")
+local VirtualInputManager = game:GetService("VirtualInputManager")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+-- ==================== ZENO OPTIMIZED ADONIS BYPASS ====================
+local DEBUG = false
+
+setthreadidentity(2)
+
+for i, v in getgc(true) do
+    if typeof(v) == "table" then
+        local DetectFunc = rawget(v, "Detected")
+        local KillFunc = rawget(v, "Kill")
+        
+        if typeof(DetectFunc) == "function" then
+            hookfunction(DetectFunc, function(Action, Info, NoCrash)
+                if Action ~= "_" then
+                    if DEBUG then warn("Adonis flagged: " .. tostring(Action)) end
+                end
+                return true
+            end)
+        end
+        
+        if typeof(KillFunc) == "function" then
+            hookfunction(KillFunc, function(Info)
+                if DEBUG then warn("Adonis tried to kill: " .. tostring(Info)) end
+            end)
+        end
+    end
+end
+
+setthreadidentity(7)
+-- ==================== END OF ZENO BYPASS ====================
+
+task.wait(3)
+
+-- ==================== COLORS (Pink & Light Blue Theme) ====================
+local PANEL_COLOR = Color3.fromRGB(255, 182, 193)
+local TITLE_COLOR = Color3.fromRGB(255, 105, 180)
+local STROKE_COLOR = Color3.fromRGB(135, 206, 250)
+local BUTTON_BASE = Color3.fromRGB(255, 200, 220)
+local BUTTON_ON = Color3.fromRGB(255, 110, 180)
+
+-- STATE VARIABLES
+local taskHandles = {}
+local guiVisible = true
+
+-- ==================== CHARACTER SETUP ====================
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoid = character:WaitForChild("Humanoid", 5)
+
+player.CharacterAdded:Connect(function(newChar)
+	character = newChar
+	humanoid = newChar:WaitForChild("Humanoid", 5)
+end)
+
+-- ==================== FEATURES ====================
+local AnimationSystem
+pcall(function()
+    AnimationSystem = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("AnimationSystem"))
+end)
+
+local function weightFeature(state)
+	if state then
+		taskHandles.weight = task.spawn(function()
+			while true do
+				pcall(function()
+					if AnimationSystem and player.Character then
+						AnimationSystem.PlayAnimation(player.Character, "Weight")
+					end
+					local MainKeys = ReplicatedStorage:WaitForChild("events"):WaitForChild("MainKeys")
+					MainKeys:FireServer("WeightOn")
+				end)
+				task.wait(0.05)
+			end
+		end)
+	else
+		if taskHandles.weight then task.cancel(taskHandles.weight) taskHandles.weight = nil end
+	end
+end
+
+local function extraWeightFeature(state)
+	if state then
+		taskHandles.extraWeight = task.spawn(function()
+			while true do
+				pcall(function()
+					if not character or not character.Parent then return end
+					if humanoid and humanoid.Health <= 0 then return end
+					
+					local MainKeys = ReplicatedStorage:WaitForChild("events"):WaitForChild("MainKeys")
+					if MainKeys then MainKeys:FireServer("Weight") end
+				end)
+				task.wait(0.8)
+			end
+		end)
+	else
+		if taskHandles.extraWeight then task.cancel(taskHandles.extraWeight) taskHandles.extraWeight = nil end
+	end
+end
+
+local function autoEscapeFeature(state)
+	if state then
+		taskHandles.headlock = task.spawn(function()
+			while true do
+				pcall(function()
+					local mainKeys = ReplicatedStorage:WaitForChild("events"):WaitForChild("MainKeys")
+					mainKeys:FireServer("DamageTool")
+				end)
+				task.wait(0.1)
+			end
+		end)
+		
+		taskHandles.escape = task.spawn(function()
+			while true do
+				pcall(function()
+					local damages = character:FindFirstChild("Player") and character.Player:FindFirstChild("Damages")
+					if damages then
+						local values = damages:FindFirstChild("values")
+						if values then
+							local damageTool = values:FindFirstChild("DamageTool")
+							if damageTool then
+								local escaped = damageTool:FindFirstChild("Escaped")
+								if escaped and ReplicatedStorage.events:FindFirstChild("ValueChange") then
+									ReplicatedStorage.events.ValueChange:FireServer(escaped, true)
+								end
+							end
+						end
+					end
+				end)
+				task.wait(0.1)
+			end
+		end)
+	else
+		if taskHandles.headlock then task.cancel(taskHandles.headlock) taskHandles.headlock = nil end
+		if taskHandles.escape then task.cancel(taskHandles.escape) taskHandles.escape = nil end
+	end
+end
+
+local function autoPressQFeature(state)
+	if state then
+		taskHandles.pressQ = task.spawn(function()
+			while true do
+				VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Q, false, game)
+				task.wait()
+				VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Q, false, game)
+				task.wait(1)
+			end
+		end)
+	else
+		if taskHandles.pressQ then task.cancel(taskHandles.pressQ) taskHandles.pressQ = nil end
+	end
+end
+
+local function autoPressFFeature(state)
+	if state then
+		taskHandles.pressF = task.spawn(function()
+			while true do
+				VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.F, false, game)
+				task.wait()
+				VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.F, false, game)
+				task.wait(1.5)
+			end
+		end)
+	else
+		if taskHandles.pressF then task.cancel(taskHandles.pressF) taskHandles.pressF = nil end
+	end
+end
+
+local function autoShiftFeature(state)
+	if state then
+		pcall(function()
+			VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.LeftShift, false, game)
+			task.wait(0.05)
+			VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.LeftShift, false, game)
+		end)
+	end
+end
+
+local function healUpFeature(state)
+	if state then
+		pcall(function()
+			ReplicatedStorage.events.SoloPlrEvents:FireServer("Health")
+		end)
+		print("💊 Healed once")
+	end
+end
+
+local function autoPunchFeature(state)
+	if state then
+		taskHandles.punch = task.spawn(function()
+			local mainKeys = ReplicatedStorage:WaitForChild("events"):WaitForChild("MainKeys")
+			while true do
+				mainKeys:FireServer("Punch")
+				task.wait(0.01)
+			end
+		end)
+	else
+		if taskHandles.punch then task.cancel(taskHandles.punch) taskHandles.punch = nil end
+	end
+end
+
+local function autoPressTFeature(state)
+	if state then
+		taskHandles.pressT = task.spawn(function()
+			while true do
+				VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.T, false, game)
+				task.wait()
+				VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.T, false, game)
+				task.wait(0.00206)
+			end
+		end)
+	else
+		if taskHandles.pressT then task.cancel(taskHandles.pressT) taskHandles.pressT = nil end
+	end
+end
+
+-- ================= COUNTER ATTACKS (Always ON) =================
+local oldNamecall
+oldNamecall = hookmetamethod(game, "__namecall", newcclosure(function(self, ...)
+    local method = getnamecallmethod()
+    local args = {...}
+    if method == "FireServer" then
+        if (self.Name == "Duo" or self.Name == "Solo") then
+            if args[1] == "Rush" or args[1] == "Stomp" or args[1] == "BeatDown" or 
+               args[1] == "MetalCup" or args[1] == "Bottle" or args[1] == "Grab" then
+                return
+            end
+        end
+    end
+    return oldNamecall(self, ...)
+end))
+
+-- ==================== GUI ====================
+local sg, panel
+
+local function createGUI()
+	local oldGui = playerGui:FindFirstChild("BandoPCScriptGUI")
+	if oldGui then oldGui:Destroy() end
+
+	sg = Instance.new("ScreenGui")
+	sg.Name = "BandoPCScriptGUI"
+	sg.ResetOnSpawn = false
+	sg.IgnoreGuiInset = true
+	sg.Parent = playerGui
+
+	panel = Instance.new("Frame")
+	panel.Size = UDim2.new(0, 130, 0, 390)
+	panel.Position = UDim2.new(1, -140, 0.15, 0)
+	panel.BackgroundColor3 = PANEL_COLOR
+	panel.BackgroundTransparency = 0.2
+	panel.Parent = sg
+	Instance.new("UICorner", panel).CornerRadius = UDim.new(0, 10)
+
+	local stroke = Instance.new("UIStroke")
+	stroke.Color = STROKE_COLOR
+	stroke.Thickness = 1.5
+	stroke.Parent = panel
+
+	local titleBar = Instance.new("Frame")
+	titleBar.Size = UDim2.new(1, 0, 0, 24)
+	titleBar.BackgroundColor3 = TITLE_COLOR
+	titleBar.Parent = panel
+	Instance.new("UICorner", titleBar).CornerRadius = UDim.new(0, 10)
+
+	local titleText = Instance.new("TextLabel")
+	titleText.Size = UDim2.new(1, -30, 1, 0)
+	titleText.Position = UDim2.new(0, 8, 0, 0)
+	titleText.BackgroundTransparency = 1
+	titleText.Text = "Bando PC Script"
+	titleText.TextColor3 = Color3.new(1,1,1)
+	titleText.TextSize = 12
+	titleText.Font = Enum.Font.GothamBold
+	titleText.Parent = titleBar
+
+	local minimizeBtn = Instance.new("TextButton")
+	minimizeBtn.Size = UDim2.new(0, 18, 0, 18)
+	minimizeBtn.Position = UDim2.new(1, -24, 0, 3)
+	minimizeBtn.BackgroundTransparency = 1
+	minimizeBtn.Text = "–"
+	minimizeBtn.TextColor3 = Color3.new(1,1,1)
+	minimizeBtn.TextSize = 16
+	minimizeBtn.Parent = titleBar
+
+	-- Dragging
+	local dragging, dragStart, startPos
+	titleBar.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+			dragging = true
+			dragStart = input.Position
+			startPos = panel.Position
+			input.Changed:Connect(function()
+				if input.UserInputState == Enum.UserInputState.End then dragging = false end
+			end)
+		end
+	end)
+
+	UserInputService.InputChanged:Connect(function(input)
+		if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+			local delta = input.Position - dragStart
+			panel.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+		end
+	end)
+
+	local yOffset = 32
+	local function createToggle(name, callback)
+		local btn = Instance.new("TextButton")
+		btn.Size = UDim2.new(0.92, 0, 0, 28)
+		btn.Position = UDim2.new(0.04, 0, 0, yOffset)
+		btn.BackgroundColor3 = BUTTON_BASE
+		btn.TextColor3 = Color3.new(1,1,1)
+		btn.Font = Enum.Font.GothamSemibold
+		btn.TextSize = 11
+		btn.Text = name .. " OFF"
+		btn.Parent = panel
+		Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
+
+		local active = false
+		btn.MouseButton1Click:Connect(function()
+			active = not active
+			btn.Text = name .. (active and " ON" or " OFF")
+			btn.BackgroundColor3 = active and BUTTON_ON or BUTTON_BASE
+			callback(active)
+
+			if (name == "Heal Up" or name == "Auto Shift") and active then
+				task.delay(0.25, function()
+					active = false
+					btn.Text = name .. " OFF"
+					btn.BackgroundColor3 = BUTTON_BASE
+				end)
+			end
+		end)
+
+		yOffset += 34
+	end
+
+	createToggle("Heal Up", healUpFeature)
+	createToggle("Auto Punch", autoPunchFeature)
+	createToggle("Auto Press T", autoPressTFeature)
+	createToggle("Auto H/E", autoEscapeFeature)
+	createToggle("Weight", weightFeature)
+	createToggle("Extra Weight", extraWeightFeature)
+	createToggle("Auto Q", autoPressQFeature)
+	createToggle("Auto F", autoPressFFeature)
+	createToggle("Auto Shift", autoShiftFeature)
+end
+
+createGUI()
+
+-- ==================== V KEY TOGGLE (Zeno Style) ====================
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+	if gameProcessed then return end
+	if input.KeyCode == Enum.KeyCode.V then
+		guiVisible = not guiVisible
+		if panel then
+			panel.Visible = guiVisible
+		end
+	end
+end)
+
+print("✅ Bando PC Script Loaded for Zeno | Auto Q = 1s | Weight = 50ms | Press V to Hide/Show GUI")
