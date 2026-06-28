@@ -124,13 +124,16 @@ local function autoPressTFeature(state)
         taskHandles.pressT = task.spawn(function()
             while true do
                 VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.T, false, game)
-                task.wait(0.1)
+                task.wait(0.05)
                 VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.T, false, game)
                 task.wait(2)
             end
         end)
     else
-        if taskHandles.pressT then task.cancel(taskHandles.pressT) taskHandles.pressT = nil end
+        if taskHandles.pressT then
+            task.cancel(taskHandles.pressT)
+            taskHandles.pressT = nil
+        end
     end
 end
 
@@ -148,7 +151,7 @@ local function headlockFeature(state)
     end
 end
 
--- ==================== AUTO ESCAPE (Super Fast) ====================
+-- ==================== AUTO ESCAPE (VERY FAST) ====================
 local function autoEscapeFeature(state)
     if state then
         taskHandles.autoescape = task.spawn(function()
@@ -168,13 +171,13 @@ local function autoEscapeFeature(state)
                     ev:FireServer(escaped, true)
                 end
                 
-                task.wait(0.01)  -- Super fast checking
+                task.wait(0.01)  -- Super fast escape
             end
         end)
     else
-        if taskHandles.autoescape then 
-            task.cancel(taskHandles.autoescape) 
-            taskHandles.autoescape = nil 
+        if taskHandles.autoescape then
+            task.cancel(taskHandles.autoescape)
+            taskHandles.autoescape = nil
         end
     end
 end
@@ -239,7 +242,7 @@ createToggle("Weight", weightFeature)
 createToggle("Auto Drag", autoDragFeature)
 createToggle("Auto Press T", autoPressTFeature)
 createToggle("Heal Up", healUpFeature)
-createToggle("Auto Escape", autoEscapeFeature)
+createToggle("Auto Escape", autoEscapeFeature)  -- Added
 
 -- ==================== V KEY TOGGLE GUI ====================
 UserInputService.InputBegan:Connect(function(input, gp)
