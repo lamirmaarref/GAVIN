@@ -80,18 +80,13 @@ local function autoDragFeature(state)
     end
 end
 
-local function weightFeature(state)
+local function autoWeightFeature(state)
     if state then
         taskHandles.weight = task.spawn(function()
+            local ev = ReplicatedStorage.events.MainKeys
             while true do
-                pcall(function()
-                    local AnimationSystem = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("AnimationSystem"))
-                    if AnimationSystem then
-                        AnimationSystem.PlayAnimation(player.Character, "Weight")
-                    end
-                    ReplicatedStorage.events.MainKeys:FireServer("WeightOn")
-                end)
-                task.wait(0.01)
+                ev:FireServer("WeightOn")
+                task.wait(0.1)
             end
         end)
     else
@@ -130,10 +125,7 @@ local function autoPressTFeature(state)
             end
         end)
     else
-        if taskHandles.pressT then
-            task.cancel(taskHandles.pressT)
-            taskHandles.pressT = nil
-        end
+        if taskHandles.pressT then task.cancel(taskHandles.pressT) taskHandles.pressT = nil end
     end
 end
 
@@ -148,6 +140,49 @@ local function headlockFeature(state)
         end)
     else
         if taskHandles.headlock then task.cancel(taskHandles.headlock) taskHandles.headlock = nil end
+    end
+end
+
+-- ==================== AUTO PUSH + STOMP (On Top) ====================
+local function autoStompFeature(state)
+    if state then
+        taskHandles.stomp = task.spawn(function()
+            local humanoid = char:WaitForChild("Humanoid")
+            local animator = humanoid:WaitForChild("Animator")
+            
+            local stompAnim = Instance.new("Animation")
+            stompAnim.AnimationId = "rbxassetid://16069201225"
+            
+            local track = animator:LoadAnimation(stompAnim)
+            track.Looped = false
+            
+            local mainKeys = ReplicatedStorage:WaitForChild("events"):WaitForChild("MainKeys")
+            
+            while true do
+                local hrp = char:FindFirstChild("HumanoidRootPart")
+                if hrp then
+                    for _, otherPlayer in pairs(Players:GetPlayers()) do
+                        if otherPlayer ~= player and otherPlayer.Character then
+                            local otherHrp = otherPlayer.Character:FindFirstChild("HumanoidRootPart")
+                            if otherHrp then
+                                local dist = (hrp.Position - otherHrp.Position).Magnitude
+                                if dist < 8 and hrp.Position.Y > otherHrp.Position.Y + 2 then
+                                    -- On top → Push + Stomp
+                                    track:Play()
+                                    mainKeys:FireServer("Push")
+                                    mainKeys:FireServer("Stomp")
+                                    task.wait(1.2) -- cooldown
+                                    break
+                                end
+                            end
+                        end
+                    end
+                end
+                task.wait(0.2)
+            end
+        end)
+    else
+        if taskHandles.stomp then task.cancel(taskHandles.stomp) taskHandles.stomp = nil end
     end
 end
 
@@ -171,7 +206,7 @@ local function autoEscapeFeature(state)
                     ev:FireServer(escaped, true)
                 end
                 
-                task.wait(0.01)  -- Super fast escape
+                task.wait(0.01)
             end
         end)
     else
@@ -189,7 +224,7 @@ sg.ResetOnSpawn = false
 sg.Parent = playerGui
 
 local panel = Instance.new("Frame")
-panel.Size = UDim2.new(0, 160, 0, 380)
+panel.Size = UDim2.new(0, 160, 0, 460)
 panel.Position = UDim2.new(0.02, 0, 0.3, 0)
 panel.BackgroundColor3 = PANEL_COLOR
 panel.BackgroundTransparency = 0.2
@@ -211,7 +246,6 @@ title.Font = Enum.Font.GothamBold
 title.Parent = panel
 Instance.new("UICorner", title).CornerRadius = UDim.new(0, 12)
 
--- Toggle Creator Function
 local y = 45
 local function createToggle(name, callback)
     local btn = Instance.new("TextButton")
@@ -238,11 +272,12 @@ end
 -- Create Toggles
 createToggle("Auto Punch", autoPunchFeature)
 createToggle("Headlock", headlockFeature)
-createToggle("Weight", weightFeature)
+createToggle("Auto Weight", autoWeightFeature)
 createToggle("Auto Drag", autoDragFeature)
 createToggle("Auto Press T", autoPressTFeature)
 createToggle("Heal Up", healUpFeature)
-createToggle("Auto Escape", autoEscapeFeature)  -- Added
+createToggle("Auto Escape", autoEscapeFeature)
+createToggle("Auto Stomp (On Top)", autoStompFeature)
 
 -- ==================== V KEY TOGGLE GUI ====================
 UserInputService.InputBegan:Connect(function(input, gp)
