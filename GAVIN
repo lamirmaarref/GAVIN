@@ -1,11 +1,10 @@
 -- Kaiblu Script | PC Version for Xeno Executor
--- Press V to Hide/Show GUI
-
+-- Press V to Hide/Show GUI | Press C to Toggle Heal Up
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
 local VirtualInputManager = game:GetService("VirtualInputManager")
-
+local TweenService = game:GetService("TweenService")
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
@@ -13,13 +12,12 @@ local playerGui = player:WaitForChild("PlayerGui")
 local getinfo = getinfo or debug.getinfo
 local DEBUG = false
 local Detected, Kill
-
 setthreadidentity(2)
 for i, v in getgc(true) do
     if typeof(v) == "table" then
         local DetectFunc = rawget(v, "Detected")
         local KillFunc = rawget(v, "Kill")
-       
+      
         if typeof(DetectFunc) == "function" and not Detected then
             Detected = DetectFunc
             hookfunction(Detected, function(Action, Info, NoCrash)
@@ -29,7 +27,7 @@ for i, v in getgc(true) do
                 return true
             end)
         end
-       
+      
         if rawget(v, "Variables") and rawget(v, "Process") and typeof(KillFunc) == "function" and not Kill then
             Kill = KillFunc
             hookfunction(Kill, function(Info)
@@ -40,7 +38,6 @@ for i, v in getgc(true) do
 end
 setthreadidentity(7)
 -- ==================== END BYPASS ====================
-
 task.wait(2)
 
 -- ==================== VARIABLES ====================
@@ -53,24 +50,72 @@ local TITLE_COLOR = Color3.fromRGB(10, 25, 70)
 local STROKE_COLOR = Color3.fromRGB(0, 170, 255)
 local BUTTON_BASE = Color3.fromRGB(35, 50, 90)
 local BUTTON_ON = Color3.fromRGB(0, 140, 255)
-
 local taskHandles = {}
 local guiVisible = true
 
--- ==================== FEATURES ====================
+-- ==================== NOTIFICATION SYSTEM ====================
+local notifications = {}
+local function showNotification(text, isOn)
+    local status = isOn and "Enabled" or "Disabled"
+    local color = isOn and Color3.fromRGB(0, 170, 100) or Color3.fromRGB(200, 50, 50)
+    
+    local notif = Instance.new("TextLabel")
+    notif.Size = UDim2.new(0, 240, 0, 42)
+    notif.Position = UDim2.new(1, -260, 1, -70 - (#notifications * 52))
+    notif.BackgroundColor3 = Color3.fromRGB(20, 30, 55)
+    notif.Text = isOn and "✅ " .. text or "❌ " .. text
+    notif.TextColor3 = color
+    notif.TextSize = 14
+    notif.Font = Enum.Font.GothamSemibold
+    notif.BackgroundTransparency = 0.25
+    notif.TextStrokeTransparency = 0.6
+    notif.Parent = playerGui
+
+    Instance.new("UICorner", notif).CornerRadius = UDim.new(0, 8)
+
+    table.insert(notifications, notif)
+
+    task.delay(2, function()
+        if notif and notif.Parent then
+            TweenService:Create(notif, TweenInfo.new(0.7), {TextTransparency = 1, BackgroundTransparency = 1}):Play()
+            task.wait(0.7)
+            notif:Destroy()
+            table.remove(notifications, table.find(notifications, notif) or 0)
+        end
+    end)
+end
+
+-- ==================== HEAL UP (Toggleable) ====================
+local healUpEnabled = false
+local healUpButton = nil  -- Will store reference to GUI button
+
+local function healUpFeature(state)
+    healUpEnabled = state
+    if healUpButton then
+        healUpButton.Text = "Heal Up " .. (state and "[ON]" or "[OFF]")
+        healUpButton.BackgroundColor3 = state and BUTTON_ON or BUTTON_BASE
+    end
+    showNotification("Heal Up", state)
+    
+    if state then
+        task.spawn(function()
+            while healUpEnabled do
+                ReplicatedStorage.events.SoloPlrEvents:FireServer("Health")
+                task.wait(1.2)
+            end
+        end)
+    end
+end
+
+-- ==================== OTHER FEATURES ====================
 local function autoDragFeature(state)
+    showNotification("Auto Drag", state)
     if state then
         taskHandles.autodrag = task.spawn(function()
             while true do
                 pcall(function()
-                    local args = {
-                        { Received = 10, Loader = Instance.new("Folder"), Sent = 14, Module = Instance.new("ModuleScript"), Mode = "Fire" },
-                        "u^\rTWLs\tHSX",
-                        { Received = 10, Sent = 13 },
-                        "2df06fb6-74b5-48f0-8bcc-8d9f86a8d12f"
-                    }
-                    local remote = ReplicatedStorage:WaitForChild("d8ea441b-aabf-450f-8869-cedb065f6866")
-                    remote:FireServer(unpack(args))
+                    local args = {{ Received = 10, Loader = Instance.new("Folder"), Sent = 14, Module = Instance.new("ModuleScript"), Mode = "Fire" },"u^\rTWLs\tHSX",{ Received = 10, Sent = 13 },"2df06fb6-74b5-48f0-8bcc-8d9f86a8d12f"}
+                    ReplicatedStorage:WaitForChild("d8ea441b-aabf-450f-8869-cedb065f6866"):FireServer(unpack(args))
                 end)
                 task.wait(0.01)
             end
@@ -81,6 +126,7 @@ local function autoDragFeature(state)
 end
 
 local function autoWeightFeature(state)
+    showNotification("Auto Weight", state)
     if state then
         taskHandles.weight = task.spawn(function()
             local ev = ReplicatedStorage.events.MainKeys
@@ -94,13 +140,8 @@ local function autoWeightFeature(state)
     end
 end
 
-local function healUpFeature(state)
-    if state then
-        ReplicatedStorage.events.SoloPlrEvents:FireServer("Health")
-    end
-end
-
 local function autoPunchFeature(state)
+    showNotification("Auto Punch", state)
     if state then
         taskHandles.punch = task.spawn(function()
             local mainKeys = ReplicatedStorage:WaitForChild("events"):WaitForChild("MainKeys")
@@ -115,6 +156,7 @@ local function autoPunchFeature(state)
 end
 
 local function autoPressTFeature(state)
+    showNotification("Auto Press T", state)
     if state then
         taskHandles.pressT = task.spawn(function()
             while true do
@@ -130,6 +172,7 @@ local function autoPressTFeature(state)
 end
 
 local function headlockFeature(state)
+    showNotification("Headlock", state)
     if state then
         taskHandles.headlock = task.spawn(function()
             local mainKeys = ReplicatedStorage:WaitForChild("events"):WaitForChild("MainKeys")
@@ -143,21 +186,33 @@ local function headlockFeature(state)
     end
 end
 
--- ==================== AUTO PUSH + STOMP (On Top) ====================
+local function autoPushFeature(state)
+    showNotification("Auto Push", state)
+    if state then
+        taskHandles.push = task.spawn(function()
+            local mainKeys = ReplicatedStorage:WaitForChild("events"):WaitForChild("MainKeys")
+            while true do
+                mainKeys:FireServer("Push")
+                task.wait(0.6)
+            end
+        end)
+    else
+        if taskHandles.push then task.cancel(taskHandles.push) taskHandles.push = nil end
+    end
+end
+
 local function autoStompFeature(state)
+    showNotification("Auto Stomp", state)
     if state then
         taskHandles.stomp = task.spawn(function()
             local humanoid = char:WaitForChild("Humanoid")
             local animator = humanoid:WaitForChild("Animator")
-            
             local stompAnim = Instance.new("Animation")
             stompAnim.AnimationId = "rbxassetid://16069201225"
-            
             local track = animator:LoadAnimation(stompAnim)
             track.Looped = false
-            
             local mainKeys = ReplicatedStorage:WaitForChild("events"):WaitForChild("MainKeys")
-            
+           
             while true do
                 local hrp = char:FindFirstChild("HumanoidRootPart")
                 if hrp then
@@ -167,11 +222,9 @@ local function autoStompFeature(state)
                             if otherHrp then
                                 local dist = (hrp.Position - otherHrp.Position).Magnitude
                                 if dist < 8 and hrp.Position.Y > otherHrp.Position.Y + 2 then
-                                    -- On top → Push + Stomp
                                     track:Play()
-                                    mainKeys:FireServer("Push")
                                     mainKeys:FireServer("Stomp")
-                                    task.wait(1.2) -- cooldown
+                                    task.wait(1.2)
                                     break
                                 end
                             end
@@ -186,36 +239,34 @@ local function autoStompFeature(state)
     end
 end
 
--- ==================== AUTO ESCAPE (VERY FAST) ====================
 local function autoEscapeFeature(state)
+    showNotification("Auto Escape", state)
     if state then
         taskHandles.autoescape = task.spawn(function()
             local ev = ReplicatedStorage:WaitForChild("events"):WaitForChild("ValueChange")
-            
             while true do
                 local success, escaped = pcall(function()
-                    return char
-                        and char:FindFirstChild("Player")
-                        and char.Player:FindFirstChild("Damages")
-                        and char.Player.Damages:FindFirstChild("values")
-                        and char.Player.Damages.values:FindFirstChild("DamageTool")
-                        and char.Player.Damages.values.DamageTool:FindFirstChild("Escaped")
+                    return char and char:FindFirstChild("Player") and char.Player:FindFirstChild("Damages") and char.Player.Damages:FindFirstChild("values") and char.Player.Damages.values:FindFirstChild("DamageTool") and char.Player.Damages.values.DamageTool:FindFirstChild("Escaped")
                 end)
-                
                 if success and escaped then
                     ev:FireServer(escaped, true)
                 end
-                
                 task.wait(0.01)
             end
         end)
     else
-        if taskHandles.autoescape then
-            task.cancel(taskHandles.autoescape)
-            taskHandles.autoescape = nil
-        end
+        if taskHandles.autoescape then task.cancel(taskHandles.autoescape) taskHandles.autoescape = nil end
     end
 end
+
+-- ==================== C KEYBIND FOR HEAL UP ====================
+UserInputService.InputBegan:Connect(function(input, gp)
+    if gp then return end
+    if input.KeyCode == Enum.KeyCode.C then
+        healUpEnabled = not healUpEnabled
+        healUpFeature(healUpEnabled)
+    end
+end)
 
 -- ==================== GUI ====================
 local sg = Instance.new("ScreenGui")
@@ -224,7 +275,7 @@ sg.ResetOnSpawn = false
 sg.Parent = playerGui
 
 local panel = Instance.new("Frame")
-panel.Size = UDim2.new(0, 160, 0, 460)
+panel.Size = UDim2.new(0, 160, 0, 500)
 panel.Position = UDim2.new(0.02, 0, 0.3, 0)
 panel.BackgroundColor3 = PANEL_COLOR
 panel.BackgroundTransparency = 0.2
@@ -266,7 +317,13 @@ local function createToggle(name, callback)
         btn.BackgroundColor3 = active and BUTTON_ON or BUTTON_BASE
         callback(active)
     end)
+    
+    if name == "Heal Up" then
+        healUpButton = btn
+    end
+    
     y += 48
+    return btn
 end
 
 -- Create Toggles
@@ -277,6 +334,7 @@ createToggle("Auto Drag", autoDragFeature)
 createToggle("Auto Press T", autoPressTFeature)
 createToggle("Heal Up", healUpFeature)
 createToggle("Auto Escape", autoEscapeFeature)
+createToggle("Auto Push (Always)", autoPushFeature)
 createToggle("Auto Stomp (On Top)", autoStompFeature)
 
 -- ==================== V KEY TOGGLE GUI ====================
@@ -288,7 +346,7 @@ UserInputService.InputBegan:Connect(function(input, gp)
     end
 end)
 
-print("✅ Kaiblu Script Loaded for Xeno | Press V to Hide/Show GUI")
+print("✅ Kaiblu Script Loaded | V = GUI | C = Toggle Heal Up")
 if Rayfield then
-    Rayfield:Notify({Title = "Loaded!", Content = "Press V to toggle GUI visibility", Duration = 6})
+    Rayfield:Notify({Title = "Loaded!", Content = "V = GUI | C = Heal Up Toggle", Duration = 6})
 end
