@@ -5,14 +5,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
 local VirtualInputManager = game:GetService("VirtualInputManager")
 local TweenService = game:GetService("TweenService")
-
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
-
-print("✅ Script started loading...")
-
--- Wait for game to load
-ReplicatedStorage:WaitForChild("events", 10)
 
 -- ==================== ADONIS BYPASS ====================
 local getinfo = getinfo or debug.getinfo
@@ -44,8 +38,7 @@ for i, v in getgc(true) do
 end
 setthreadidentity(7)
 -- ==================== END BYPASS ====================
-
-task.wait(1)
+task.wait(2)
 
 -- ==================== VARIABLES ====================
 local char = player.Character or player.CharacterAdded:Wait()
@@ -121,7 +114,7 @@ local function healUpFeature(state)
     end
 end
 
--- ==================== OTHER FEATURES (with pcall protection) ====================
+-- ==================== AUTO FEATURES ====================
 local function createAutoFeature(name, taskName, fireFunc, delayTime)
     return function(state)
         showNotification(name, state)
@@ -147,7 +140,7 @@ local autoPunchFeature = createAutoFeature("Auto Punch", "punch", function()
 end, 0.01)
 
 local autoWeightFeature = createAutoFeature("Auto Weight", "weight", function()
-    ReplicatedStorage:WaitForChild("events").MainKeys:FireServer("WeightOn")
+    ReplicatedStorage.events.MainKeys:FireServer("WeightOn")
 end, 0.1)
 
 local autoPushFeature = createAutoFeature("Auto Push", "push", function()
@@ -155,6 +148,7 @@ local autoPushFeature = createAutoFeature("Auto Push", "push", function()
     mainKeys:FireServer("Push")
 end, 0.6)
 
+-- ==================== AUTO DRAG ====================
 local function autoDragFeature(state)
     showNotification("Auto Drag", state)
     if state then
@@ -175,15 +169,16 @@ local function autoDragFeature(state)
     end
 end
 
+-- ==================== AUTO PRESS T (0.12 milliseconds) ====================
 local function autoPressTFeature(state)
     showNotification("Auto Press T", state)
     if state then
         taskHandles.pressT = task.spawn(function()
             while true do
                 VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.T, false, game)
-                task.wait(0.05)
+                task.wait(0.00012)   -- 0.12 milliseconds
                 VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.T, false, game)
-                task.wait(2)
+                task.wait(0.00012)
             end
         end)
     else
@@ -352,7 +347,7 @@ UserInputService.InputBegan:Connect(function(input, gp)
     end
 end)
 
-print("✅ Kaiblu Script Loaded Successfully")
+print("✅ Kaiblu Script Loaded | Auto Press T set to 0.12 milliseconds")
 if Rayfield then
-    Rayfield:Notify({Title = "Loaded!", Content = "All features should now work", Duration = 6})
+    Rayfield:Notify({Title = "Updated!", Content = "Auto Press T is now 0.12ms (very fast)", Duration = 6})
 end
