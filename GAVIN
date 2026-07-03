@@ -169,16 +169,16 @@ local function autoDragFeature(state)
     end
 end
 
--- ==================== AUTO PRESS T (0.12 milliseconds) ====================
+-- ==================== AUTO PRESS T (2 seconds) ====================
 local function autoPressTFeature(state)
     showNotification("Auto Press T", state)
     if state then
         taskHandles.pressT = task.spawn(function()
             while true do
                 VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.T, false, game)
-                task.wait(0.00012)   -- 0.12 milliseconds
+                task.wait(0.05)
                 VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.T, false, game)
-                task.wait(0.00012)
+                task.wait(2)   -- Back to 2 seconds
             end
         end)
     else
@@ -347,7 +347,7 @@ UserInputService.InputBegan:Connect(function(input, gp)
     end
 end)
 
-print("✅ Kaiblu Script Loaded | Auto Press T set to 0.12 milliseconds")
+print("✅ Kaiblu Script Loaded | Auto Press T set to 2 seconds")
 if Rayfield then
-    Rayfield:Notify({Title = "Updated!", Content = "Auto Press T is now 0.12ms (very fast)", Duration = 6})
+    Rayfield:Notify({Title = "Updated!", Content = "Auto Press T is now 2 seconds", Duration = 5})
 end
