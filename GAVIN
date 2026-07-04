@@ -102,7 +102,7 @@ local function healUpFeature(state)
                 pcall(function()
                     soloEvents:FireServer("Health")
                 end)
-                task.wait(1.2)
+                task.wait(3)
             end
         end)
     else
@@ -114,41 +114,79 @@ local function healUpFeature(state)
     end
 end
 
--- ==================== AUTO FEATURES ====================
-local function createAutoFeature(name, taskName, fireFunc, delayTime)
-    return function(state)
-        showNotification(name, state)
-        if state then
-            taskHandles[taskName] = task.spawn(function()
-                while true do
-                    pcall(fireFunc)
-                    task.wait(delayTime)
-                end
-            end)
-        else
-            if taskHandles[taskName] then
-                task.cancel(taskHandles[taskName])
-                taskHandles[taskName] = nil
+-- ==================== AUTO PUNCH + RINGS (MAX SPEED) ====================
+local function autoPunchFeature(state)
+    showNotification("Auto Punch + Rings", state)
+    if state then
+        -- Auto Punch (Fastest possible)
+        taskHandles.punch = task.spawn(function()
+            local mainKeys = ReplicatedStorage:WaitForChild("events"):WaitForChild("MainKeys")
+            while true do
+                pcall(function()
+                    mainKeys:FireServer("Punch")
+                end)
+                task.wait()  -- Maximum speed
             end
+        end)
+        
+        -- Auto Rings (Permanent)
+        taskHandles.rings = task.spawn(function()
+            local mainKeys = ReplicatedStorage:WaitForChild("events"):WaitForChild("MainKeys")
+            while true do
+                pcall(function()
+                    mainKeys:FireServer("Rings")
+                end)
+                task.wait(0.3)
+            end
+        end)
+    else
+        if taskHandles.punch then
+            task.cancel(taskHandles.punch)
+            taskHandles.punch = nil
+        end
+        if taskHandles.rings then
+            task.cancel(taskHandles.rings)
+            taskHandles.rings = nil
         end
     end
 end
 
-local autoPunchFeature = createAutoFeature("Auto Punch", "punch", function()
-    local mainKeys = ReplicatedStorage:WaitForChild("events"):WaitForChild("MainKeys")
-    mainKeys:FireServer("Punch")
-end, 0.01)
+-- ==================== OTHER FEATURES ====================
+local autoWeightFeature = function(state)
+    showNotification("Auto Weight", state)
+    if state then
+        taskHandles.weight = task.spawn(function()
+            local mainKeys = ReplicatedStorage:WaitForChild("events"):WaitForChild("MainKeys")
+            while true do
+                pcall(function()
+                    mainKeys:FireServer("WeightOn")
+                end)
+                task.wait(0.1)
+            end
+        end)
+    else
+        if taskHandles.weight then task.cancel(taskHandles.weight) taskHandles.weight = nil end
+    end
+end
 
-local autoWeightFeature = createAutoFeature("Auto Weight", "weight", function()
-    ReplicatedStorage.events.MainKeys:FireServer("WeightOn")
-end, 0.1)
+local autoPushFeature = function(state)
+    showNotification("Auto Push", state)
+    if state then
+        taskHandles.push = task.spawn(function()
+            local mainKeys = ReplicatedStorage:WaitForChild("events"):WaitForChild("MainKeys")
+            while true do
+                pcall(function()
+                    mainKeys:FireServer("Push")
+                end)
+                task.wait(0.6)
+            end
+        end)
+    else
+        if taskHandles.push then task.cancel(taskHandles.push) taskHandles.push = nil end
+    end
+end
 
-local autoPushFeature = createAutoFeature("Auto Push", "push", function()
-    local mainKeys = ReplicatedStorage:WaitForChild("events"):WaitForChild("MainKeys")
-    mainKeys:FireServer("Push")
-end, 0.6)
-
--- ==================== AUTO DRAG ====================
+-- ==================== AUTO DRAG (MAX SPEED) ====================
 local function autoDragFeature(state)
     showNotification("Auto Drag", state)
     if state then
@@ -158,7 +196,7 @@ local function autoDragFeature(state)
                 pcall(function()
                     mainKeys:FireServer("Drag")
                 end)
-                task.wait(0.15)
+                task.wait()
             end
         end)
     else
@@ -169,16 +207,16 @@ local function autoDragFeature(state)
     end
 end
 
--- ==================== AUTO PRESS T (2 seconds) ====================
+-- ==================== AUTO PRESS T ====================
 local function autoPressTFeature(state)
     showNotification("Auto Press T", state)
     if state then
         taskHandles.pressT = task.spawn(function()
             while true do
                 VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.T, false, game)
-                task.wait(0.1)
+                task.wait(0.05)
                 VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.T, false, game)
-                task.wait(100000)   -- Back to 2 seconds
+                task.wait(0.35)
             end
         end)
     else
@@ -247,17 +285,27 @@ local function autoEscapeFeature(state)
         taskHandles.autoescape = task.spawn(function()
             local ev = ReplicatedStorage:WaitForChild("events"):WaitForChild("ValueChange")
             while true do
-                local success, escaped = pcall(function()
-                    return char and char:FindFirstChild("Player") and char.Player:FindFirstChild("Damages") and char.Player.Damages:FindFirstChild("values") and char.Player.Damages.values:FindFirstChild("DamageTool") and char.Player.Damages.values.DamageTool:FindFirstChild("Escaped")
+                pcall(function()
+                    local success, escaped = pcall(function()
+                        return char 
+                            and char:FindFirstChild("Player") 
+                            and char.Player:FindFirstChild("Damages") 
+                            and char.Player.Damages:FindFirstChild("values") 
+                            and char.Player.Damages.values:FindFirstChild("DamageTool") 
+                            and char.Player.Damages.values.DamageTool:FindFirstChild("Escaped")
+                    end)
+                    if success and escaped then
+                        ev:FireServer(escaped, true)
+                    end
                 end)
-                if success and escaped then
-                    ev:FireServer(escaped, true)
-                end
-                task.wait(0.01)
+                task.wait()
             end
         end)
     else
-        if taskHandles.autoescape then task.cancel(taskHandles.autoescape) taskHandles.autoescape = nil end
+        if taskHandles.autoescape then 
+            task.cancel(taskHandles.autoescape) 
+            taskHandles.autoescape = nil 
+        end
     end
 end
 
@@ -328,7 +376,7 @@ local function createToggle(name, callback)
 end
 
 -- Create Toggles
-createToggle("Auto Punch", autoPunchFeature)
+createToggle("Auto Punch + Rings", autoPunchFeature)
 createToggle("Headlock", headlockFeature)
 createToggle("Auto Weight", autoWeightFeature)
 createToggle("Auto Drag", autoDragFeature)
@@ -347,7 +395,7 @@ UserInputService.InputBegan:Connect(function(input, gp)
     end
 end)
 
-print("✅ Kaiblu Script Loaded | Auto Press T set to 2 seconds")
+print("✅ Kaiblu Script Loaded | Auto Punch is now maximum speed")
 if Rayfield then
-    Rayfield:Notify({Title = "Updated!", Content = "Auto Press T is now 2 seconds", Duration = 5})
+    Rayfield:Notify({Title = "Updated!", Content = "Auto Punch set to fastest possible speed", Duration = 6})
 end
