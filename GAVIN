@@ -176,7 +176,7 @@ local function autoPressTFeature(state)
         taskHandles.pressT = task.spawn(function()
             while true do
                 VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.T, false, game)
-                task.wait(0.05)
+                task.wait(2)
                 VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.T, false, game)
                 task.wait(2)   -- Back to 2 seconds
             end
