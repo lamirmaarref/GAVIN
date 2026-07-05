@@ -216,7 +216,7 @@ local function autoPressTFeature(state)
                 VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.T, false, game)
                 task.wait()
                 VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.T, false, game)
-                task.wait(0.002)
+                task.wait(0.00206)
             end
         end)
     else
