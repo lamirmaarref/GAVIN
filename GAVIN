@@ -76,22 +76,39 @@ local function healUpFeature(state)
     end
 end
 
--- ==================== AUTO PUNCH + RUSH ====================
+-- ==================== AUTO PUNCH ====================
 local function autoPunchFeature(state)
-    showNotification("Auto Punch + Rush", state)
+    showNotification("Auto Punch", state)
     if state then
         taskHandles.punch = task.spawn(function()
             local mainKeys = ReplicatedStorage:WaitForChild("events"):WaitForChild("MainKeys")
             while true do
                 pcall(function()
                     mainKeys:FireServer("Punch")
-                    mainKeys:FireServer("Rush") -- Added Rush
                 end)
                 task.wait(0.06)
             end
         end)
     else
         if taskHandles.punch then task.cancel(taskHandles.punch) taskHandles.punch = nil end
+    end
+end
+
+-- ==================== AUTO RUSH (Separate Toggle) ====================
+local function autoRushFeature(state)
+    showNotification("Auto Rush", state)
+    if state then
+        taskHandles.rush = task.spawn(function()
+            local mainKeys = ReplicatedStorage:WaitForChild("events"):WaitForChild("MainKeys")
+            while true do
+                pcall(function()
+                    mainKeys:FireServer("Rush")
+                end)
+                task.wait(0.25)
+            end
+        end)
+    else
+        if taskHandles.rush then task.cancel(taskHandles.rush) taskHandles.rush = nil end
     end
 end
 
@@ -131,6 +148,24 @@ local function autoDragFeature(state)
     end
 end
 
+-- ==================== AUTO WEIGHT ====================
+local function autoWeightFeature(state)
+    showNotification("Auto Weight", state)
+    if state then
+        taskHandles.weight = task.spawn(function()
+            local mainKeys = ReplicatedStorage:WaitForChild("events"):WaitForChild("MainKeys")
+            while true do
+                pcall(function()
+                    mainKeys:FireServer("WeightOn")
+                end)
+                task.wait(0.1)
+            end
+        end)
+    else
+        if taskHandles.weight then task.cancel(taskHandles.weight) taskHandles.weight = nil end
+    end
+end
+
 -- ==================== AUTO PRESS T ====================
 local function autoPressTFeature(state)
     showNotification("Auto Press T", state)
@@ -155,8 +190,8 @@ sg.ResetOnSpawn = false
 sg.Parent = playerGui
 
 local panel = Instance.new("Frame")
-panel.Size = UDim2.new(0, 160, 0, 520)
-panel.Position = UDim2.new(0.02, 0, 0.3, 0)
+panel.Size = UDim2.new(0, 160, 0, 580)
+panel.Position = UDim2.new(0.02, 0, 0.2, 0)
 panel.BackgroundColor3 = Color3.fromRGB(20, 30, 55)
 panel.BackgroundTransparency = 0.2
 panel.Parent = sg
@@ -202,9 +237,11 @@ local function createToggle(name, callback)
 end
 
 -- Create Toggles
-createToggle("Auto Punch + Rush", autoPunchFeature)
+createToggle("Auto Punch", autoPunchFeature)
+createToggle("Auto Rush", autoRushFeature)
 createToggle("Auto Headlock", autoHeadlockFeature)
 createToggle("Auto Drag", autoDragFeature)
+createToggle("Auto Weight", autoWeightFeature)
 createToggle("Auto Press T", autoPressTFeature)
 createToggle("Heal Up", healUpFeature)
 createToggle("Auto Escape", autoEscapeFeature)
@@ -220,7 +257,7 @@ UserInputService.InputBegan:Connect(function(input, gp)
     end
 end)
 
-print("✅ Kaiblu Script Loaded | Auto Punch now includes Rush")
+print("✅ Kaiblu Script Loaded")
 if Rayfield then
-    Rayfield:Notify({Title = "Updated!", Content = "Auto Punch now includes Rush", Duration = 6})
+    Rayfield:Notify({Title = "Loaded!", Content = "Auto Rush added as separate toggle", Duration = 6})
 end
