@@ -94,7 +94,7 @@ local function autoPunchFeature(state)
     end
 end
 
--- ==================== AUTO RUSH (Separate Toggle) ====================
+-- ==================== AUTO RUSH ====================
 local function autoRushFeature(state)
     showNotification("Auto Rush", state)
     if state then
@@ -259,5 +259,5 @@ end)
 
 print("✅ Kaiblu Script Loaded")
 if Rayfield then
-    Rayfield:Notify({Title = "Loaded!", Content = "Auto Rush added as separate toggle", Duration = 6})
+    Rayfield:Notify({Title = "Loaded!", Content = "Auto Rush separate toggle", Duration = 6})
 end
