@@ -94,24 +94,6 @@ local function autoPunchFeature(state)
     end
 end
 
--- ==================== AUTO RUSH ====================
-local function autoRushFeature(state)
-    showNotification("Auto Rush", state)
-    if state then
-        taskHandles.rush = task.spawn(function()
-            local mainKeys = ReplicatedStorage:WaitForChild("events"):WaitForChild("MainKeys")
-            while true do
-                pcall(function()
-                    mainKeys:FireServer("Rush")
-                end)
-                task.wait(0.25)
-            end
-        end)
-    else
-        if taskHandles.rush then task.cancel(taskHandles.rush) taskHandles.rush = nil end
-    end
-end
-
 -- ==================== AUTO HEADLOCK ====================
 local function autoHeadlockFeature(state)
     showNotification("Auto Headlock", state)
@@ -190,8 +172,8 @@ sg.ResetOnSpawn = false
 sg.Parent = playerGui
 
 local panel = Instance.new("Frame")
-panel.Size = UDim2.new(0, 160, 0, 580)
-panel.Position = UDim2.new(0.02, 0, 0.2, 0)
+panel.Size = UDim2.new(0, 160, 0, 520)
+panel.Position = UDim2.new(0.02, 0, 0.3, 0)
 panel.BackgroundColor3 = Color3.fromRGB(20, 30, 55)
 panel.BackgroundTransparency = 0.2
 panel.Parent = sg
@@ -238,7 +220,6 @@ end
 
 -- Create Toggles
 createToggle("Auto Punch", autoPunchFeature)
-createToggle("Auto Rush", autoRushFeature)
 createToggle("Auto Headlock", autoHeadlockFeature)
 createToggle("Auto Drag", autoDragFeature)
 createToggle("Auto Weight", autoWeightFeature)
@@ -259,5 +240,5 @@ end)
 
 print("✅ Kaiblu Script Loaded")
 if Rayfield then
-    Rayfield:Notify({Title = "Loaded!", Content = "Auto Rush separate toggle", Duration = 6})
+    Rayfield:Notify({Title = "Loaded!", Content = "Clean Version", Duration = 6})
 end
