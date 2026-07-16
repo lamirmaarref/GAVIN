@@ -1,10 +1,12 @@
 -- Kaiblu Script | PC Version for Xeno Executor
 -- Press V to Hide/Show GUI
+
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
 local VirtualInputManager = game:GetService("VirtualInputManager")
 local TweenService = game:GetService("TweenService")
+
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
@@ -41,11 +43,8 @@ local function showNotification(text, isOn)
     notif.BackgroundTransparency = 0.25
     notif.TextStrokeTransparency = 0.6
     notif.Parent = playerGui
-
     Instance.new("UICorner", notif).CornerRadius = UDim.new(0, 8)
-
     table.insert(notifications, notif)
-
     task.delay(2, function()
         if notif and notif.Parent then
             TweenService:Create(notif, TweenInfo.new(0.7), {TextTransparency = 1, BackgroundTransparency = 1}):Play()
@@ -58,16 +57,10 @@ end
 
 -- ==================== HEAL UP ====================
 local healUpEnabled = false
-local healUpButton = nil
-
 local function healUpFeature(state)
     healUpEnabled = state
-    if healUpButton then
-        healUpButton.Text = "Heal Up " .. (state and "[ON]" or "[OFF]")
-        healUpButton.BackgroundColor3 = state and Color3.fromRGB(0, 140, 255) or Color3.fromRGB(35, 50, 90)
-    end
     showNotification("Heal Up", state)
-    
+   
     if state then
         taskHandles.heal = task.spawn(function()
             local soloEvents = ReplicatedStorage:WaitForChild("events"):WaitForChild("SoloPlrEvents")
@@ -79,7 +72,6 @@ local function healUpFeature(state)
             end
         end)
     else
-        healUpEnabled = false
         if taskHandles.heal then
             task.cancel(taskHandles.heal)
             taskHandles.heal = nil
@@ -100,7 +92,7 @@ local function autoPunchFeature(state)
                 task.wait(0.08)
             end
         end)
-        
+       
         taskHandles.rings = task.spawn(function()
             local mainKeys = ReplicatedStorage:WaitForChild("events"):WaitForChild("MainKeys")
             while true do
@@ -116,7 +108,7 @@ local function autoPunchFeature(state)
     end
 end
 
--- ==================== AUTO HEADLOCK ====================
+-- ==================== AUTO HEADLOCK (Replaced with Cute Mint Version) ====================
 local headlockRunning = false
 local HEADLOCK_DELAY = 2
 
@@ -147,16 +139,7 @@ local function startAutoHeadlock()
 end
 
 local function stopAutoHeadlock()
-	headlockRunning = false
-end
-
-local function autoHeadlockFeature(state)
-	showNotification("Auto Headlock", state)
-	if state then
-		startAutoHeadlock()
-	else
-		stopAutoHeadlock()
-	end
+    headlockRunning = false
 end
 
 -- ==================== AUTO DRAG ====================
@@ -221,11 +204,11 @@ local function autoEscapeFeature(state)
             while true do
                 safeCall("Auto Escape", function()
                     local success, escaped = pcall(function()
-                        return char 
-                            and char:FindFirstChild("Player") 
-                            and char.Player:FindFirstChild("Damages") 
-                            and char.Player.Damages:FindFirstChild("values") 
-                            and char.Player.Damages.values:FindFirstChild("DamageTool") 
+                        return char
+                            and char:FindFirstChild("Player")
+                            and char.Player:FindFirstChild("Damages")
+                            and char.Player.Damages:FindFirstChild("values")
+                            and char.Player.Damages.values:FindFirstChild("DamageTool")
                             and char.Player.Damages.values.DamageTool:FindFirstChild("Escaped")
                     end)
                     if success and escaped then
@@ -270,7 +253,7 @@ local function autoStompFeature(state)
             local track = animator:LoadAnimation(stompAnim)
             track.Looped = false
             local mainKeys = ReplicatedStorage:WaitForChild("events"):WaitForChild("MainKeys")
-           
+          
             while true do
                 safeCall("Auto Stomp", function()
                     local hrp = char:FindFirstChild("HumanoidRootPart")
@@ -344,7 +327,7 @@ local function createToggle(name, callback)
     btn.TextSize = 13
     btn.Parent = panel
     Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
-
+    
     local active = false
     btn.MouseButton1Click:Connect(function()
         active = not active
@@ -354,13 +337,19 @@ local function createToggle(name, callback)
             callback(active)
         end)
     end)
-    
+   
     y += 48
 end
 
 -- Create Toggles
 createToggle("Auto Punch + Rings", autoPunchFeature)
-createToggle("Auto Headlock", autoHeadlockFeature)
+createToggle("Auto Headlock", function(state)
+    if state then
+        startAutoHeadlock()
+    else
+        stopAutoHeadlock()
+    end
+end)
 createToggle("Auto Drag", autoDragFeature)
 createToggle("Auto Weight", autoWeightFeature)
 createToggle("Auto Press T", autoPressTFeature)
@@ -378,7 +367,4 @@ UserInputService.InputBegan:Connect(function(input, gp)
     end
 end)
 
-print("✅ Kaiblu Script Loaded")
-if Rayfield then
-    Rayfield:Notify({Title = "Loaded!", Content = "Keybind removed", Duration = 6})
-end
+print("✅ Kaiblu Script Loaded (Auto Headlock Updated)")
