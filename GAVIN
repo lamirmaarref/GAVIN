@@ -106,21 +106,36 @@ local function autoPunchFeature(state)
 end
 
 -- ==================== AUTO HEADLOCK ====================
-local function autoHeadlockFeature(state)
-    showNotification("Auto Headlock", state)
-    if state then
-        taskHandles.headlock = task.spawn(function()
-            local mainKeys = ReplicatedStorage:WaitForChild("events"):WaitForChild("MainKeys")
-            while true do
-                pcall(function()
-                    mainKeys:FireServer("DamageTool")
-                end)
-                task.wait(0.07)
-            end
-        end)
-    else
-        if taskHandles.headlock then task.cancel(taskHandles.headlock) taskHandles.headlock = nil end
-    end
+local headlockRunning = false
+local HEADLOCK_DELAY = 2
+
+local function startAutoHeadlock()
+	if headlockRunning then return end
+	headlockRunning = true
+	task.spawn(function()
+		while headlockRunning and character and character.Parent do
+			pcall(function()
+				local hum = character:FindFirstChildWhichIsA("Humanoid")
+				if hum then
+					local animator = hum:FindFirstChildOfClass("Animator") or hum
+					local anim = Instance.new("Animation")
+					anim.AnimationId = "rbxassetid://17278701527"
+					local track = animator:LoadAnimation(anim)
+					track.Priority = Enum.AnimationPriority.Action2
+					track.Looped = false
+					track:Play()
+					track.Stopped:Wait()
+
+					if MainKeys then MainKeys:FireServer("DamageTool") end
+				end
+			end)
+			task.wait(HEADLOCK_DELAY)
+		end
+	end)
+end
+
+local function stopAutoHeadlock()
+	headlockRunning = false
 end
 
 -- ==================== AUTO DRAG ====================
