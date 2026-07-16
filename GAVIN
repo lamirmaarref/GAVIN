@@ -15,6 +15,17 @@ player.CharacterAdded:Connect(function(c) char = c end)
 local taskHandles = {}
 local guiVisible = true
 
+-- ==================== ERROR HANDLING ====================
+-- Wraps a call in pcall but, unlike a bare pcall, surfaces the error to the
+-- output instead of silently swallowing it. Returns whether the call succeeded.
+local function safeCall(context, fn)
+    local ok, err = pcall(fn)
+    if not ok then
+        warn(string.format("[Kaiblu] %s failed: %s", context, tostring(err)))
+    end
+    return ok
+end
+
 -- ==================== NOTIFICATION SYSTEM ====================
 local notifications = {}
 local function showNotification(text, isOn)
@@ -61,7 +72,7 @@ local function healUpFeature(state)
         taskHandles.heal = task.spawn(function()
             local soloEvents = ReplicatedStorage:WaitForChild("events"):WaitForChild("SoloPlrEvents")
             while healUpEnabled do
-                pcall(function()
+                safeCall("Heal Up", function()
                     soloEvents:FireServer("Health")
                 end)
                 task.wait(3)
@@ -83,7 +94,7 @@ local function autoPunchFeature(state)
         taskHandles.punch = task.spawn(function()
             local mainKeys = ReplicatedStorage:WaitForChild("events"):WaitForChild("MainKeys")
             while true do
-                pcall(function()
+                safeCall("Auto Punch", function()
                     mainKeys:FireServer("Punch")
                 end)
                 task.wait(0.08)
@@ -93,7 +104,7 @@ local function autoPunchFeature(state)
         taskHandles.rings = task.spawn(function()
             local mainKeys = ReplicatedStorage:WaitForChild("events"):WaitForChild("MainKeys")
             while true do
-                pcall(function()
+                safeCall("Auto Rings", function()
                     mainKeys:FireServer("Rings")
                 end)
                 task.wait(0.4)
@@ -113,9 +124,10 @@ local function startAutoHeadlock()
 	if headlockRunning then return end
 	headlockRunning = true
 	task.spawn(function()
-		while headlockRunning and character and character.Parent do
-			pcall(function()
-				local hum = character:FindFirstChildWhichIsA("Humanoid")
+		local mainKeys = ReplicatedStorage:WaitForChild("events"):WaitForChild("MainKeys")
+		while headlockRunning and char and char.Parent do
+			safeCall("Auto Headlock", function()
+				local hum = char:FindFirstChildWhichIsA("Humanoid")
 				if hum then
 					local animator = hum:FindFirstChildOfClass("Animator") or hum
 					local anim = Instance.new("Animation")
@@ -126,7 +138,7 @@ local function startAutoHeadlock()
 					track:Play()
 					track.Stopped:Wait()
 
-					if MainKeys then MainKeys:FireServer("DamageTool") end
+					mainKeys:FireServer("DamageTool")
 				end
 			end)
 			task.wait(HEADLOCK_DELAY)
@@ -138,6 +150,15 @@ local function stopAutoHeadlock()
 	headlockRunning = false
 end
 
+local function autoHeadlockFeature(state)
+	showNotification("Auto Headlock", state)
+	if state then
+		startAutoHeadlock()
+	else
+		stopAutoHeadlock()
+	end
+end
+
 -- ==================== AUTO DRAG ====================
 local function autoDragFeature(state)
     showNotification("Auto Drag", state)
@@ -145,7 +166,7 @@ local function autoDragFeature(state)
         taskHandles.autodrag = task.spawn(function()
             local mainKeys = ReplicatedStorage:WaitForChild("events"):WaitForChild("MainKeys")
             while true do
-                pcall(function()
+                safeCall("Auto Drag", function()
                     mainKeys:FireServer("Drag")
                 end)
                 task.wait(0.12)
@@ -163,7 +184,7 @@ local function autoWeightFeature(state)
         taskHandles.weight = task.spawn(function()
             local mainKeys = ReplicatedStorage:WaitForChild("events"):WaitForChild("MainKeys")
             while true do
-                pcall(function()
+                safeCall("Auto Weight", function()
                     mainKeys:FireServer("WeightOn")
                 end)
                 task.wait(0.1)
@@ -198,7 +219,7 @@ local function autoEscapeFeature(state)
         taskHandles.autoescape = task.spawn(function()
             local ev = ReplicatedStorage:WaitForChild("events"):WaitForChild("ValueChange")
             while true do
-                pcall(function()
+                safeCall("Auto Escape", function()
                     local success, escaped = pcall(function()
                         return char 
                             and char:FindFirstChild("Player") 
@@ -226,7 +247,7 @@ local function autoPushFeature(state)
         taskHandles.push = task.spawn(function()
             local mainKeys = ReplicatedStorage:WaitForChild("events"):WaitForChild("MainKeys")
             while true do
-                pcall(function()
+                safeCall("Auto Push", function()
                     mainKeys:FireServer("Push")
                 end)
                 task.wait(0.6)
@@ -251,23 +272,25 @@ local function autoStompFeature(state)
             local mainKeys = ReplicatedStorage:WaitForChild("events"):WaitForChild("MainKeys")
            
             while true do
-                local hrp = char:FindFirstChild("HumanoidRootPart")
-                if hrp then
-                    for _, otherPlayer in pairs(Players:GetPlayers()) do
-                        if otherPlayer ~= player and otherPlayer.Character then
-                            local otherHrp = otherPlayer.Character:FindFirstChild("HumanoidRootPart")
-                            if otherHrp then
-                                local dist = (hrp.Position - otherHrp.Position).Magnitude
-                                if dist < 8 and hrp.Position.Y > otherHrp.Position.Y + 2 then
-                                    track:Play()
-                                    mainKeys:FireServer("Stomp")
-                                    task.wait(5)
-                                    break
+                safeCall("Auto Stomp", function()
+                    local hrp = char:FindFirstChild("HumanoidRootPart")
+                    if hrp then
+                        for _, otherPlayer in pairs(Players:GetPlayers()) do
+                            if otherPlayer ~= player and otherPlayer.Character then
+                                local otherHrp = otherPlayer.Character:FindFirstChild("HumanoidRootPart")
+                                if otherHrp then
+                                    local dist = (hrp.Position - otherHrp.Position).Magnitude
+                                    if dist < 8 and hrp.Position.Y > otherHrp.Position.Y + 2 then
+                                        track:Play()
+                                        mainKeys:FireServer("Stomp")
+                                        task.wait(5)
+                                        break
+                                    end
                                 end
                             end
                         end
                     end
-                end
+                end)
                 task.wait(0.2)
             end
         end)
@@ -307,6 +330,10 @@ Instance.new("UICorner", title).CornerRadius = UDim.new(0, 12)
 
 local y = 45
 local function createToggle(name, callback)
+    if type(callback) ~= "function" then
+        warn(string.format("[Kaiblu] Toggle \"%s\" has no valid callback; skipping.", tostring(name)))
+        return
+    end
     local btn = Instance.new("TextButton")
     btn.Size = UDim2.new(0.9, 0, 0, 38)
     btn.Position = UDim2.new(0.05, 0, 0, y)
@@ -323,7 +350,9 @@ local function createToggle(name, callback)
         active = not active
         btn.Text = name .. (active and " [ON]" or " [OFF]")
         btn.BackgroundColor3 = active and Color3.fromRGB(0, 140, 255) or Color3.fromRGB(35, 50, 90)
-        callback(active)
+        safeCall(name .. " toggle", function()
+            callback(active)
+        end)
     end)
     
     y += 48
